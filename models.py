@@ -1,9 +1,19 @@
 import sqlite3
+import re
 from datetime import datetime
 from contextlib import contextmanager
 
-conn = sqlite3.connect('property_management.db')
+conn = sqlite3.connect("property_management.db")
 cursor = conn.cursor()
+
+#Users Table for Authentication
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL
+)
+""")
 
 #Properties Table
 cursor.execute("""
@@ -45,11 +55,38 @@ CREATE TABLE IF NOT EXISTS tenants (
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS maintenance_requests (
     id INTEGER PRIMARY KEY,
-    description TEXT NOT NULL,
-    status TEXT NOT NULL,
+    request_description TEXT NOT NULL,
+    request_date DATE,
+    request_status TEXT NOT NULL,
+    tenant_id INTEGER,
     property_id INTEGER,
-    FOREIGN KEY (property_id) REFERENCES properties(id)
+    FOREIGN KEY (property_id) REFERENCES properties(id),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 )
+""")
+
+#Rent_payment table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS rent_payments (
+    id INTEGER PRIMARY KEY,
+    property_id INTEGER,
+    tenant_id INTEGER, 
+    payment_amount REAL NOT NULL,
+    payment_date DATE,
+    FOREIGN KEY (property_id) REFERENCES properties(id),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+)
+""")
+
+#Expenses table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS expenses (
+               id INTEGER PRIMARY KEY,
+               description TEXT NOT NULL,
+               amount REAL NOT NULL,
+               property_id INTEGER,
+               FOREIGN KEY (property_id) REFERENCES properties (id)
+);
 """)
 
 conn.commit()
@@ -63,6 +100,21 @@ def get_cursor():
         yield conn.cursor()
     finally:
         conn.close()
+
+class User:
+    def __init__ (self, username, password):
+        self.username= username
+        self.password= password
+
+
+    def save(self):
+        with get_cursor() as cursor:
+            cursor.execute("""
+            INSERT INTO users (username, password)
+            VALUES(?, ?)
+""", (self.username, self.password,))
+            
+
 
 class Property:
     def __init__(self, address, city, rent_amount, status="Available", owner_id=None):
@@ -91,7 +143,34 @@ class Property:
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM properties WHERE id= ?", (property_id,))
             return cursor.fetchone()
-        
+
+
+    def add_property():
+        try:
+            address = input("Enter property address: ")  
+            city= input("Enter city: ")
+            state= input("Enter state: ")
+            price_input= input("Enter price: ")
+
+            #Data validation
+            if not address or not city or not state:
+                raise ValueError("Address, city, and state are required fields.")
+            if not re.match(r"^\d+(\.\d{2})?$", price_input):
+                raise ValueError("Invalid price format. Price should be a number with optional two decimal places.")
+            
+            price= float(price_input)
+            owner_id= int(input("Enter owner ID: "))
+
+            property= Property(address, city, state, price, owner_id)
+            property.save()
+            print("Property added successfully.")
+
+        except ValueError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
+
     #will add methods like delete, update, etc later
  
 
@@ -186,22 +265,54 @@ class RentPayment:
             return cursor.fetchone()
 
 
-    # add methods (delete, update, etc)
+    #function to add a new rent payment
+    def add_rent_payment(property_id, tenant_id, payment_amount):
+        payment_date =  datetime.now().strftime('%Y-%m-%d')
+        with get_cursor() as cursor:
+            cursor.execute("INSERT INTO rent_payments(property_id, tenant_id, payment_amount, payment_date) VALUES(?, ?, ?, ?)",
+                           (property_id, tenant_id, payment_amount, payment_date))
+
+
+    #function to retrieve rent payments for a specific property
+    def get_rent_payments_for_property(property_id):
+        with get_cursor() as cursor:
+            cursor.execute("SELECT * FROM rent_payments WHERE property_id = ?", (property_id,))
+            payments= cursor.fetchall()
+            for payment in payments:
+                print(payment)
+
+    #function to retrieve rent payments for a specific tenant
+    def get_rent_payments_for_tenant(tenant_id):
+        with get_cursor() as cursor:
+            cursor.execute("SELECT * FROM rent_payments WHERE tenant_id= ?", (tenant_id,))
+            payments = cursor.fetchall()
+            for payment in payments:
+                print(payment)
+
+
+    #function to delete a rent payment
+    def delete_rent_payment(payment_id):
+        with get_cursor() as cursor:
+            cursor.execute('DELETE FROM rent_payments WHERE id=?', (payment_id,))
+            conn.commit()
+            print("Rent payment deleted successfully")
+
 
 
 
 class MaintenanceRequest:
-    def __init__ (self, description, tenant_id, property_id, status="open"):
-        self.description = description
+    def __init__ (self, request_description, tenant_id, property_id, request_date, request_status="open",):
+        self.request_description = request_description
         self.tenant_id= tenant_id
         self.property_id= property_id
-        self.status= status
+        self.request_status= request_status
+        self.request_date= request_date
 
 
     def save(self):
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO maintenance_requests (description, tenant_id, property_id, status) VALUES (?, ?, ?, ?)", 
-                           (self.description, self.tenant_id, self.property_id, self.status))
+            cursor.execute("INSERT INTO maintenance_requests (request_description, tenant_id, property_id, request_date, request_status) VALUES (?, ?, ?, ?)", 
+                           (self.request_description, self.tenant_id, self.property_id, self.request_date, self.request_status))
             
     
     @staticmethod
@@ -218,7 +329,50 @@ class MaintenanceRequest:
             return cursor.fetchone()
         
 
-    # add other methods (delete, update etc)
+    #function to add a new maintenance request
+    def add_maintenance_request(property_id, tenant_id, request_description, request_date, request_status):
+        request_date= datetime.now().strftime("%Y-%m-%d")
+        request_status="Pending"
+        with get_cursor() as cursor:
+            cursor.execute("INSERT INTO maintenance_request (property_id, tenant_id, request_date, request_description, request_status) VALUES (?, ?, ?, ?, ?)",
+                           (property_id, tenant_id, request_date, request_description, request_date, request_status))
+            conn.commit()
+            print("Maintenance request added successfully!")
+
+
+    #function to retrieve maintenance requests for a specific property
+    def get_maintenance_requests_for_property(property_id):
+        with get_cursor() as cursor:
+            cursor.execute("SELECT * FROM maintenance_requests WHERE property_id = ?", (property_id,))
+            requests= cursor.fetchall()
+            for  request in requests:
+                print(request)
+
+
+    #function to retrieve maintenance requests for a specific tenant
+    def get_maintenance_requests_for_tenant(tenant_id):
+        with get_cursor() as cursor:
+            cursor.execute("SELECT * FROM maintenance_requests WHERE tenant_id= ?", (tenant_id,))
+            requests= cursor.fetchall()
+            for request in requests:
+                print(request)
+
+    
+    #function to update the status of a maintenance request
+    def update_maintenance_request_status(request_id, new_status):
+        cursor.execute("UPDATE maintenance_requests SET request_status= ? WHERE id=?", (new_status, request_id))
+        conn.commit()
+        print("Maintenance request status updated successfully")
+    
+
+
+    #function to delete a maintenance request
+    def delete_maintenance_request(request_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM maintenance_requests WHERE id = ?", (request_id,))
+            conn.commit()
+            print("Maintenance request status deleted successfully!")
+
 
 
 
@@ -243,6 +397,13 @@ INSERT INTO expenses (description, amount, date, property_id) VALUES(?, ?, ?, ?)
             cursor.execute("SELECT * FROM expenses")
             return cursor.fetchall()
         
+    @staticmethod
+    def get_expenses_for_property(property_id):
+        with get_cursor() as cursor:
+            cursor.execute("SELECT * FROM expenses WHERE property_id = ?", (property_id,))
+            expenses = cursor.fetchall()
+
+            return expenses
 
     @staticmethod
     def get_by_id(expense_id):
