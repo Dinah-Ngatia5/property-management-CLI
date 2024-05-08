@@ -77,4 +77,4 @@ print("Generated invoice:", invoice_data)
 #more utility functions, incase i wanna add more
 
 
-#PS i don't think i will be using any of the code i've written above, just learning some new stuff, ** Extra extra Terrified of bugs haha***
+#PS i don't plan on using any of the code i've written above, just learning some new stuff, ** Extra extra Terrified of bugs haha***

@@ -3,7 +3,6 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Virtual environments
 venv/
 env/
 *.env
@@ -11,3 +10,4 @@ env/
 # Compiled files
 *.pyc
 
+__pycache__/

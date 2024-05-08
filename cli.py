@@ -1,5 +1,6 @@
 import click
-from models import Expense, Owner, Tenant, Property, User, MaintenanceRequest, RentPayment
+from models import Expense, Owner, Tenant, Property, User, MaintenanceRequest, RentPayment, Document
+import argparse
 
 @click.group()
 def cli():
@@ -201,6 +202,7 @@ def rent_payment():
     """Manage rent payments"""
     pass
 
+
 @rent_payment.command()
 def add():
     """Add a new rent payment"""
@@ -233,6 +235,7 @@ def update(payment_id):
     RentPayment.update(payment_id, new_tenant_id, new_property_id, new_payment_date, new_amount)
     click.echo(f"Rent payment with ID{payment_id} successfully updated!!")
 
+
 # Maintenance request operations
 @cli.group()
 def maintenance_request():
@@ -257,7 +260,7 @@ def add():
 def delete(request_id):
     """Delete a maintenance request"""
     MaintenanceRequest.delete(request_id)
-    click.echo("Maintenance request of ID{request_id} has been deleted.")
+    click.echo(f"Maintenance request of ID{request_id} has been deleted.")
 
 
 @maintenance_request.command()
@@ -266,8 +269,95 @@ def update(request_id):
     """Update a maintenance request"""
     new_description= click.prompt("Enter a new description ::Leave blank to keep current", default="")
     new_tenant_id= click.prompt("Enter new tenant ID **Leave blank to keep current**", default=0)
+    new_property_id= click.prompt("Enter new property ID  **Leave blank to keep current**", default=0)
+    new_request_status= click.prompt("Enter new request_status **Leave blank to keep default**", type=str, default="open")
+    
+    MaintenanceRequest.update(request_id, new_description, new_tenant_id, new_property_id, new_request_status)
+    click.echo(f"Maintenance request of ID{request_id} successfully updated.")
 
 
+
+
+#Expense Operation 
+@cli.group
+def expense():
+    """Manage expenses"""
+    pass
+
+@expense.command()
+def add():
+    """Add a new expense"""
+    description= click.prompt("Enter a description", type=str)
+    amount= click.prompt("Enter an amount", type=float)
+    date = click.prompt("Enter today's date(YYYY-MM-DD)", type=str )
+    property_id= click.prompt("Enter property ID ", type= int)
+
+    new_expense= Expense(description, amount, date, property_id)
+    new_expense.save()
+    click.echo("New expense added.")
+
+@expense.command()
+@click.argument("expense_id", type=int)
+def update(expense_id):
+    """Update an expense"""
+    new_description= click.prompt("Enter a new description **Leave blank to keep current**", type=str, default= "")
+    new_amount= click.prompt("Enter a new amount (leave blank to keep current)", type=float, default=0.0)
+    new_date= click.prompt("Enter new date(YYYY-MM-DD)", type=str, default="")
+    new_property_id= click.prompt("Enter new property ID **Leave blank to keep current**", type=int, default=0)
+
+    Expense.update(expense_id, new_description, new_amount, new_date, new_property_id)
+    click.echo(f"Expense of ID{expense_id} successfully updated")
+
+
+@expense.command()
+@click.argument("expense_id", type=int)
+def delete(expense_id):
+    """Delete an expense Woohoo!!"""
+    Expense.delete(expense_id)
+    click.echo(f"Expense of ID{expense_id} has been deleted, you can now rest easy!")
+
+
+
+# Document Operations
+@cli.group
+def document():
+    """Manage docs"""
+    pass
+
+@document.command()
+def add():
+    """Add a doc"""
+    name= click.prompt("Enter a new doc name", type=str)
+    file_path= click.prompt("Enter the file_path for this particular doc", type= str)
+    property_id= click.prompt("Enter a property ID", type=int)
+    access_level= click.prompt("Enter the access level for this particular doc", type=str)
+
+
+    new_document = Document(name, file_path, property_id, access_level)
+    new_document.save()
+    click.echo("#New doc added!!")
+
+
+@document.command()
+@click.argument("document_id", type=int)
+def update(document_id):
+    """Update a certain doc"""
+    new_name= click.prompt("Enter new doc name **Leave blank to leave it as it was**", type=str, default="")
+    new_file_path =click.prompt("Enter a new file path for this doc (leave blank to keep current)", type=str, default="")
+    new_property_id= click.prompt("Enter new Property ID (leave blank to keep current)", type=int, default=0)
+    new_access_level = click.prompt("Enter a new access level **Leave blank to keep current", type=str, default= "")
+
+
+    Document.update(document_id, new_name, new_file_path, new_property_id, new_access_level)
+    click.echo(f"Doc with ID{document_id} has been updated ya'll!")
+
+
+@document.command()
+@click.argument("document_id", type=int)
+def delete(document_id):
+    """Delete a doc mehn!"""
+    Document.delete(document_id)
+    click.echo(f"Doc with ID{document_id} is out!!")
 
 
 

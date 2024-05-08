@@ -1,6 +1,8 @@
+
+from cli import property, owner, tenant, expense, document, main, rent_payment, maintenance_request
 def main_menu():
     while True:
-        print("\nProperty Management System Menu 🏰:")
+        print("\nProperty Management System Menu 🏰:\n")
         print("1. Property Operations 🏠")
         print("2. Owner Operations 👨‍💼")
         print("3. Tenant Operations 🤝")
@@ -8,27 +10,27 @@ def main_menu():
         print("5. Maintenance Request Operations 🛠️")
         print("6. Expense Operations 💸")
         print("7. Document Operations 📁")
-        print("8. Reports and Analytics 📊")
+        print("8. Register or Login")
         print("9. Exit 🚪")
         
         choice = input("\nEnter your choice: ")
 
         if choice  == "1":
-            property_operations()
+            property()
         elif choice == "2":
-            owner_operations()
+            owner()
         elif choice == "3":
-            owner_operations()
+            tenant()
         elif choice == "4":
-            owner_operations()
+            rent_payment()
         elif choice == "5":
-            owner_operations()
+            maintenance_request()
         elif choice == "6":
-            owner_operations()
+            expense()
         elif choice == "7":
-            owner_operations()
+            document()
         elif choice == "8":
-            owner_operations()
+            main()
         elif choice == "9":
             print("Goodbye! See yah👋")
             break
@@ -36,7 +38,8 @@ def main_menu():
             print("Invalid choice. Please try again.")
 
 
-
+if __name__ == "__main__":
+    main_menu()
 
 
 
