@@ -6,6 +6,7 @@ from contextlib import contextmanager
 conn = sqlite3.connect("property_management.db")
 cursor = conn.cursor()
 
+#creating the tables
 #Users Table for Authentication
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
 #Properties Table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS properties (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     address TEXT NOT NULL,
     city TEXT NOT NULL,
     rent_amount INTEGER NOT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS properties (
 #Owners Table
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS owners (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT NOT NULL
@@ -41,7 +42,7 @@ CREATE TABLE IF NOT EXISTS owners (
 #Tenants table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS tenants (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     lease_start_date TEXT NOT NULL,
     lease_end_date TEXT NOT NULL,
@@ -54,7 +55,7 @@ CREATE TABLE IF NOT EXISTS tenants (
 #Maintenance_requests table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS maintenance_requests (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     request_description TEXT NOT NULL,
     request_date DATE,
     request_status TEXT NOT NULL,
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS maintenance_requests (
 #Rent_payment table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS rent_payments (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     property_id INTEGER,
     tenant_id INTEGER, 
     payment_amount REAL NOT NULL,
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS rent_payments (
 #Expenses table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS expenses (
-               id INTEGER PRIMARY KEY,
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
                description TEXT NOT NULL,
                amount REAL NOT NULL,
                property_id INTEGER,
@@ -89,6 +90,16 @@ CREATE TABLE IF NOT EXISTS expenses (
 );
 """)
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS documents (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               name TEXT NOT NULL,
+               file_path TEXT NOT NULL,
+               property_id INTEGER NOT NULL,
+               access_level TEXT NOT NULL,
+               FOREIGN KEY (property_id) REFERENCES properties(id)
+)
+""")
+#Commit all the changes and close the connection 
 conn.commit()
 conn.close()
 
@@ -128,7 +139,7 @@ class Property:
        with get_cursor() as cursor:
         cursor.execute("""
             INSERT INTO properties (address, city, rent_amount, status, owner_id)
-            VALUES(?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?)
 """, (self.address, self.city, self.rent_amount, self.status, self.owner_id))
        
     
@@ -149,19 +160,18 @@ class Property:
         try:
             address = input("Enter property address: ")  
             city= input("Enter city: ")
-            state= input("Enter state: ")
-            price_input= input("Enter price: ")
+            rent_amount= input("Enter price: ")
 
             #Data validation
-            if not address or not city or not state:
-                raise ValueError("Address, city, and state are required fields.")
-            if not re.match(r"^\d+(\.\d{2})?$", price_input):
+            if not address or not city:
+                raise ValueError("Address and city are required fields.")
+            if not re.match(r"^\d+(\.\d{2})?$", rent_amount):
                 raise ValueError("Invalid price format. Price should be a number with optional two decimal places.")
             
-            price= float(price_input)
+            price= float(rent_amount)
             owner_id= int(input("Enter owner ID: "))
 
-            property= Property(address, city, state, price, owner_id)
+            property= Property(address, city, price, owner_id)
             property.save()
             print("Property added successfully.")
 
