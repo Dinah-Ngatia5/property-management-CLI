@@ -5,7 +5,6 @@ import re
 import locale
 import time
 import smtplib
-import sqlite3
 from email.mime.text import MIMEText 
 from email.mime.multipart import MIMEMultipart
 
@@ -24,10 +23,27 @@ def format_currency(amount):
     Format a numeric amount as currency
     """
     #setting locale to user's default
-    locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+    #locale.setlocale(locale.LC_ALL, "")
 
     #format amount as currency
-    formatted_amount = locale.currency(amount, grouping=True)
+    #formatted_amount = locale.currency(amount, grouping=True)
+   # return formatted_amount
+
+
+   #setting the local to a value that supports currency formatting
+    try:
+        locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+    except locale.Error:
+        #if "en_US.UTF-8" locale is not available, let's try a different locale then
+        try:
+            locale.setlocale(locale.LC_ALL, "en_US")
+        except locale.Error:
+            #if "en_US" locale is also not available, use the default "C" locale
+            pass
+
+    #formatting the currency using the updated locale
+
+    formatted_amount=locale.currency(amount, grouping=True)
     return formatted_amount
 
 def generate_invoice(property_id, tenant_id, amount):
