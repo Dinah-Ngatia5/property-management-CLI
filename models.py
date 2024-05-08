@@ -7,6 +7,7 @@ conn = sqlite3.connect("property_management.db")
 cursor = conn.cursor()
 
 #creating the tables
+
 #Users Table for Authentication
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
@@ -85,11 +86,12 @@ CREATE TABLE IF NOT EXISTS expenses (
                id INTEGER PRIMARY KEY AUTOINCREMENT,
                description TEXT NOT NULL,
                amount REAL NOT NULL,
+               date DATE,
                property_id INTEGER,
                FOREIGN KEY (property_id) REFERENCES properties (id)
 );
 """)
-
+#Documents table
 cursor.execute("""CREATE TABLE IF NOT EXISTS documents (
                id INTEGER PRIMARY KEY AUTOINCREMENT,
                name TEXT NOT NULL,
@@ -99,7 +101,7 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS documents (
                FOREIGN KEY (property_id) REFERENCES properties(id)
 )
 """)
-#Commit all the changes and close the connection 
+#Committing changes & closing the connection 
 conn.commit()
 conn.close()
 
@@ -181,7 +183,40 @@ class Property:
             print(f"An unexpected error occurred: {e}")
 
 
-    #will add methods like delete, update, etc later
+    #will add methods like delete, update later
+    def delete(self, property_id):
+        with get_cursor as cursor:
+            cursor.execute("DELETE FROM properties WHERE id = ?", (property_id, ))
+
+
+    def update(self, property_id, new_address=None, new_city= None, new_rent_amount=None, new_owner_id=None, new_status=None):
+        with get_cursor() as cursor:
+            update_fields = []
+            update_values= []
+            if new_address:
+                update_fields.append("address = ?")
+                update_values.append(new_address)
+            if new_city:
+                update_fields.append("city = ?")
+                update_values.append(new_city)
+            if new_rent_amount:
+                update_fields.append("rent_amount = ?")
+                update_values.append(new_rent_amount)
+            if new_status:
+                update_fields.append("status = ?")
+                update_values.append(new_status)
+            if new_owner_id:
+                update_fields.append("owner_id = ?")
+                update_values.append(new_owner_id)
+
+            
+            update_query= "UPDATE properties SET " + ", ".join(update_fields) + "WHERE id = ?"
+            update_values.append(property_id)
+            cursor.execute(update_query, update_values)
+
+        
+
+
  
 
 class Owner:
@@ -210,6 +245,32 @@ class Owner:
             cursor.execute("SELECT * FROM owner WHERE id = ?", (owner_id,))
             return cursor.fetchone()
         
+
+
+
+    def delete(self, owner_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM owners WHERE id = ?", (owner_id))
+
+    
+    def update(self, owner_id, new_name=None, new_email=None, new_phone=None):
+        with get_cursor() as cursor:
+            update_fields = []
+            update_values= [] 
+            if new_name:
+                update_fields.append("name = ?")
+                update_values.append(new_name)
+            if new_email:
+                update_fields.append("email = ?")
+                update_values.append(new_email)
+
+            if new_phone:
+                update_fields.append("phone = ?")
+                update_values.append(new_phone)
+            
+            update_query = "UPDATE owners SET " + ", ".join(update_fields) + "WHERE id = ?"
+            update_values.append(owner_id)
+            cursor.execute(update_query, update_values)
 
 
 class Tenant:
@@ -244,6 +305,38 @@ class Tenant:
 
 
     #Section for adding methods like delete, update etc
+    def delete(self, tenant_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM tenants WHERE id = ?", (tenant_id))
+
+    
+    def update(self, tenant_id, new_name=None, new_contact_info = None, new_lease_start_date=None, new_lease_end_date=None, new_property_id= None ):
+        with get_cursor() as cursor:
+            update_fields = []
+            update_values = []
+            if new_name:
+                update_fields.append("name = ?")
+                update_values.append(new_name)
+            if new_contact_info:
+                update_fields.append("contact_info = ?")
+                update_values.append(new_contact_info)
+            if new_lease_start_date:
+                update_fields.append("lease_start_date = ?")
+                update_values.append(new_lease_start_date)
+            if new_lease_end_date:
+                update_fields.append("lease_end_date = ?")
+                update_values.append(new_lease_end_date)
+            if new_property_id:
+                update_fields.append("property_id = ?")
+                update_values.append(new_property_id)
+
+
+            update_query= "UPDATE tenants SET " + ", " .join(update_fields) + "WHERE id = ?"
+            update_values.append(tenant_id)
+            cursor.execute(update_query, update_values)
+
+
+
 
 
 class RentPayment:
@@ -275,7 +368,7 @@ class RentPayment:
             return cursor.fetchone()
 
 
-    #function to add a new rent payment
+    #method: adding a new rent payment
     def add_rent_payment(property_id, tenant_id, payment_amount):
         payment_date =  datetime.now().strftime('%Y-%m-%d')
         with get_cursor() as cursor:
@@ -283,7 +376,7 @@ class RentPayment:
                            (property_id, tenant_id, payment_amount, payment_date))
 
 
-    #function to retrieve rent payments for a specific property
+    #method: retrieving rent payments for a specific property
     def get_rent_payments_for_property(property_id):
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM rent_payments WHERE property_id = ?", (property_id,))
@@ -291,7 +384,7 @@ class RentPayment:
             for payment in payments:
                 print(payment)
 
-    #function to retrieve rent payments for a specific tenant
+    #method: retrieving rent payments for a specific tenant
     def get_rent_payments_for_tenant(tenant_id):
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM rent_payments WHERE tenant_id= ?", (tenant_id,))
@@ -300,12 +393,41 @@ class RentPayment:
                 print(payment)
 
 
-    #function to delete a rent payment
+    #method: deleting a particular rent payment arg (payment_id)
     def delete_rent_payment(payment_id):
         with get_cursor() as cursor:
             cursor.execute('DELETE FROM rent_payments WHERE id=?', (payment_id,))
             conn.commit()
             print("Rent payment deleted successfully")
+
+    
+
+    def delete(self, payment_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM rent_payments WHERE id = ?", (payment_id,))
+
+    
+    def update(self, payment_id, new_tenant_id= None, new_property_id= None, new_payment_date= None, new_amount= None):
+        with get_cursor() as cursor:
+            update_fields = []
+            update_values = []
+            if new_tenant_id:
+                update_fields.append("tenant_id = ?")
+                update_values.append(new_tenant_id)
+            if new_property_id:
+                update_fields.append("property_id = ?")
+                update_values.append(new_property_id)
+            if new_payment_date:
+                update_fields.append("payment_date = ?")
+                update_values.append(new_payment_date)
+            if new_amount:
+                update_fields.append("amount = ?")
+                update_values.append(new_amount)
+
+            update_query = "UPDATE rent_payments SET " + ", ".join(update_fields) + "WHERE id = ?"
+            update_values.append(payment_id)
+            cursor.execute(update_query, update_values)
+            
 
 
 
@@ -339,18 +461,17 @@ class MaintenanceRequest:
             return cursor.fetchone()
         
 
-    #function to add a new maintenance request
+    #method for adding a new maintenance request
     def add_maintenance_request(property_id, tenant_id, request_description, request_date, request_status):
         request_date= datetime.now().strftime("%Y-%m-%d")
         request_status="Pending"
         with get_cursor() as cursor:
             cursor.execute("INSERT INTO maintenance_request (property_id, tenant_id, request_date, request_description, request_status) VALUES (?, ?, ?, ?, ?)",
                            (property_id, tenant_id, request_date, request_description, request_date, request_status))
-            conn.commit()
             print("Maintenance request added successfully!")
 
 
-    #function to retrieve maintenance requests for a specific property
+    #method for retrieving maintenance requests (specific property)
     def get_maintenance_requests_for_property(property_id):
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM maintenance_requests WHERE property_id = ?", (property_id,))
@@ -359,7 +480,7 @@ class MaintenanceRequest:
                 print(request)
 
 
-    #function to retrieve maintenance requests for a specific tenant
+    #method for retrieving maintenance requests(specific tenant)
     def get_maintenance_requests_for_tenant(tenant_id):
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM maintenance_requests WHERE tenant_id= ?", (tenant_id,))
@@ -368,20 +489,45 @@ class MaintenanceRequest:
                 print(request)
 
     
-    #function to update the status of a maintenance request
+    #method for updating the status of a maintenance request
     def update_maintenance_request_status(request_id, new_status):
         cursor.execute("UPDATE maintenance_requests SET request_status= ? WHERE id=?", (new_status, request_id))
-        conn.commit()
         print("Maintenance request status updated successfully")
     
 
 
-    #function to delete a maintenance request
+    #method for deleting a  maintenance request
     def delete_maintenance_request(request_id):
         with get_cursor() as cursor:
             cursor.execute("DELETE FROM maintenance_requests WHERE id = ?", (request_id,))
-            conn.commit()
             print("Maintenance request status deleted successfully!")
+
+
+    def delete(self, request_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM maintenance_requests WHERE id = ?", {request_id, })
+
+
+    def update(self, request_id, new_description=None, new_tenant_id=None, new_property_id=None, new_request_status=None ):
+        with get_cursor() as cursor:
+            update_fields = []
+            update_values = []
+            if new_description:
+                update_fields.append("description = ?")
+                update_values.append(new_description)
+            if new_tenant_id:
+                update_fields.append("tenant_id = ?")
+                update_values.append(new_tenant_id)
+            if new_property_id:
+                update_fields.append("property_id = ?")
+                update_values.append(new_property_id)
+            if new_request_status:
+                update_fields.append("request_status = ?")
+                update_fields.append(new_request_status)
+            
+            update_query = "UPDATE maintenance_requests SET " + ", ".join(update_fields) + "WHERE id = ?"
+            update_values.append(request_id)
+            cursor.execute(update_query, update_values)
 
 
 
@@ -420,7 +566,33 @@ INSERT INTO expenses (description, amount, date, property_id) VALUES(?, ?, ?, ?)
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
             return cursor.fetchone()
-        
+
+
+    def delete(self, expense_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))  
+
+
+    def update(self, expense_id, new_description=None, new_amount=None, new_date=None, new_property_id= None ):
+        with get_cursor() as cursor:
+            update_fields= []
+            update_values= []
+            if new_description:
+                update_fields.append("description = ?")
+                update_values.append("amount = ?") 
+            if new_amount:
+                update_fields.append("amount = ?")
+                update_values.append(new_amount)
+            if new_date:
+                update_fields.append("date = ?")
+                update_values.append(new_date)
+            if new_property_id:
+                update_fields.append("property_id = ?")
+                update_values.append(new_property_id)
+
+            update_query = "UPDATE expenses SET " + ", ".join(update_fields) + "WHERE id = ?"
+            update_values.append(expense_id)
+            cursor.execute(update_query, update_values)
 
 
     # add methods as needed (delete, update)
@@ -460,4 +632,30 @@ INSERT INTO documents (name, file_path, property_id, access_level) VALUES (?, ?,
 
     #add other methods(delete, update)
 
+    def delete(self, document_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+    
+
+    def update(self, document_id, new_name= None, new_file_path=None, new_property_id = None, new_access_level = None):
+        with get_cursor() as cursor:
+            update_fields = []
+            update_values = []
+            if new_name:
+                update_fields.append("name = ?")
+                update_values.append(new_name)
+            if new_file_path:
+                update_fields.append("file_path = ?")
+                update_values.append(new_file_path)
+            if new_property_id:
+                update_fields.append("property_id = ?")
+                update_values.append(new_property_id)
+            if new_access_level:
+                update_fields.append("access_level = ?")
+                update_values.append(new_access_level)
+
+
+            update_query = "UPDATE documents SET " + ", ".join(update_fields) + "WHERE id = ?"
+            update_values.append(document_id)
+            cursor.execute(update_query, update_values)
 
