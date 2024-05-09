@@ -4,20 +4,19 @@ The Property Management System Command Line Interface(CLI) is a CLI application 
 
 
 ## Contents
- 
-- [𝓟𝓡𝓞𝓟𝓔𝓡𝓣𝓨 𝓜𝓐𝓝𝓐𝓖𝓔𝓜𝓔𝓝𝓣 𝓢𝓨𝓢𝓣𝓔𝓜 𝓒𝓛𝓘](#𝓟𝓡𝓞𝓟𝓔𝓡𝓣𝓨-𝓜𝓐𝓝𝓐𝓖𝓔𝓜𝓔𝓝𝓣-𝓢𝓨𝓢𝓣𝓔𝓜-𝓒𝓛𝓘)
-  - [Contents](#contents)
-  - [Overview](#overview)
-  - [Key Features](#key-features)
-  - [Getting Started](#getting-started)
-    - [Prerequisities](#prerequisities)
-    - [Installation](#installation)
-  - [CLI Menu](#cli-menu)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Acknowledgements](#acknowledgements)
-  - [Contact](#contact)
-  - [Additional credits](#additional-credits)
+
+- [Overview](https://github.com/Dinah-Ngatia5property-management-CLItab=readme-ov-file#overview)
+- [Key Features](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#key-features)
+- [Getting Started](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#getting-started)
+  - [Prerequisities](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#prerequisities)
+  - [Installation](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#installation)
+- [CLI Menu](https://github.com/Dinah-Ngatia5property-management-CLItab=readme-ov-file#cli-menu)
+- [Contributing](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#contributing)
+- [License](https://github.com/Dinah-Ngatia5property-management-CLItab=readme-ov-file#license)
+- [Acknowledgements](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#acknowledgements)
+- [Contact](https://github.com/Dinah-Ngatia5property-management-CLItab=readme-ov-file#contact)
+- [Additional credits](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#additional-credits)
+  
 
 ## Overview
 
