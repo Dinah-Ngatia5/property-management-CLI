@@ -26,8 +26,8 @@ Built with Python and SQLite, this property management system CLI streamlines th
 
 - **Property Management**: Add, update and view properties with ease. Manage addresses, prices and owners. Never miss a detail when it comes to your real estate assets.
 - **Owner Management**: Keep track of property owners. You can store important information like names, emails, and phone numbers to stay connected with everyone involved in your properties.
-- **Tenant Management**: Maintain tenant records, including lease dates and contact info. Keep those renters happy.
-- **Rent Payment Tracking**: This CLI helps you log and retrieve rent payments quickly and accurately.💸 Say goodbye to late fees and hello to a steady cash flow.
+- **Tenant Management**: Maintain tenant records, including lease dates and contact info.
+- **Rent Payment Tracking**: This CLI helps you log and retrieve rent payments quickly and accurately.
 - **Maintenance Requests**: Tenants can submit requests, and you can track their status. Fix those leaky faucets, keep your properties in tip-top shape.
 - **Expense Tracking**: Record and manage expenses like repairs, utilities and more. Tenants can submit maintenance requests directly through the CLI, allowing you to address issues promptly.
 - **Document Management**: Store important documents like leases and contracts. Your paperwork stays organized and secure.
