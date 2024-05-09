@@ -11,7 +11,7 @@ cursor = conn.cursor()
 #Users Table for Authentication
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY,
+    user_id INTEGER PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL
 )
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
 #Properties Table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS properties (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    property_id INTEGER PRIMARY KEY AUTOINCREMENT,
     address TEXT NOT NULL,
     city TEXT NOT NULL,
     rent_amount INTEGER NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS properties (
 #Owners Table
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS owners (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT NOT NULL
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS owners (
 #Tenants table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS tenants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     lease_start_date TEXT NOT NULL,
     lease_end_date TEXT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS tenants (
 #Maintenance_requests table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS maintenance_requests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id INTEGER PRIMARY KEY AUTOINCREMENT,
     request_description TEXT NOT NULL,
     request_date DATE,
     request_status TEXT NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS maintenance_requests (
 #Rent_payment table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS rent_payments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    payment_id INTEGER PRIMARY KEY AUTOINCREMENT,
     property_id INTEGER,
     tenant_id INTEGER, 
     payment_amount REAL NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS rent_payments (
 #Expenses table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS expenses (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               expense_id INTEGER PRIMARY KEY AUTOINCREMENT,
                description TEXT NOT NULL,
                amount REAL NOT NULL,
                date DATE,
@@ -93,11 +93,10 @@ CREATE TABLE IF NOT EXISTS expenses (
 """)
 #Documents table
 cursor.execute("""CREATE TABLE IF NOT EXISTS documents (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               document_id INTEGER PRIMARY KEY AUTOINCREMENT,
                name TEXT NOT NULL,
                file_path TEXT NOT NULL,
                property_id INTEGER NOT NULL,
-               access_level TEXT NOT NULL,
                FOREIGN KEY (property_id) REFERENCES properties(id)
 )
 """)
@@ -108,49 +107,68 @@ conn.close()
 
 @contextmanager
 def get_cursor():
-    conn = sqlite3.connect("property_management.db")
     try:
-        yield conn.cursor()
+        conn = sqlite3.connect("property_management.db")
+        cursor = conn.cursor()
+        yield cursor
+        conn.commit()  # commit changes to the database
+    except sqlite3.Error as e:
+        #handle any SQLite errors that occur
+        print(f"SQLite error: {e}")
     finally:
-        conn.close()
+        #ensure the connection and cursor are properly closed
+        if 'conn' in locals():
+            conn.close()
 
 class User:
-    def __init__ (self, username, password):
+    def __init__ (self, user_id, username, password):
         self.username= username
         self.password= password
-
+        self.user_id= user_id
 
     def save(self):
         with get_cursor() as cursor:
             cursor.execute("""
-            INSERT INTO users (username, password)
+            INSERT INTO users ( username, password)
             VALUES(?, ?)
-""", (self.username, self.password,))
+""", ( self.username, self.password,))
             
 
 
 class Property:
-    def __init__(self, address, city, rent_amount, status="Available", owner_id=None):
+    def __init__(self, property_id, address, city, rent_amount, status="Available", owner_id=None):
         self.address= address
         self.rent_amount= rent_amount
         self.status= status
         self.owner_id= owner_id
         self.city= city
+        self.property_id = property_id
 
-    def save(self):
-       with get_cursor() as cursor:
-        cursor.execute("""
-            INSERT INTO properties (address, city, rent_amount, status, owner_id)
-            VALUES(?, ?, ?, ?, ?)
-""", (self.address, self.city, self.rent_amount, self.status, self.owner_id))
+        
+
+    def add(self):
+        try:
+            with get_cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO properties (address, city, rent_amount, status, owner_id) 
+                    VALUES (?, ?, ?, ?, ?)
+                """, (self.address, self.city, self.rent_amount, self.status, self.owner_id))
+        except sqlite3.Error as e:
+            print("SQLite error:", e)
+            
        
     
-    @staticmethod
-    def get_all():
+    @classmethod
+    def get_all(cls):
+        """Get all properties."""
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM properties")
-            return cursor.fetchall
-        
+            rows = cursor.fetchall()
+            properties = []
+            for row in rows:
+                property = cls(*row)
+                properties.append(property)
+            return properties
     
     def get_by_id(property_id):
         with get_cursor() as cursor:
@@ -220,15 +238,16 @@ class Property:
  
 
 class Owner:
-    def __init__(self, name, email, phone):
+    def __init__(self, owner_id, name, email, phone):
         self.name = name
         self.email = email
         self.phone = phone
+        self.owner_id= owner_id
 
     def save(self):
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO owners (name, email, phone) VALUES(?, ?, ?)",
-                            (self.name, self.email, self.phone))
+            cursor.execute("INSERT INTO owners ( name, email, phone) VALUES(?, ?, ?)",
+                            ( self.name, self.email, self.phone))
        
        
        
@@ -274,18 +293,18 @@ class Owner:
 
 
 class Tenant:
-    def __init__(self, name, contact_info, lease_start_date, lease_end_date, property_id):
+    def __init__(self,tenant_id, name, contact_info, lease_start_date, lease_end_date, property_id):
         self.name= name
         self.contact_info= contact_info
         self.lease_start_date= lease_start_date
         self.lease_end_date= lease_end_date
         self.property_id= property_id
-
+        self.tenant_id= tenant_id
     
     def save(self):
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO tenants (name, contact_info, lease_start_date, lease_end_date, property_id VALUES (?, ?, ?, ?, ?)",
-                           (self.name, self.contact_info, self.lease_start_date, self.lease_end_date, self.property_id))
+            cursor.execute("INSERT INTO tenants ( name, contact_info, lease_start_date, lease_end_date, property_id VALUES (?, ?, ?, ?, ?)",
+                           ( self.name, self.contact_info, self.lease_start_date, self.lease_end_date, self.property_id))
             
     
 
@@ -340,16 +359,16 @@ class Tenant:
 
 
 class RentPayment:
-    def __init__ (self, tenant_id, property_id, payment_date, amount):
+    def __init__ (self,payment_id, tenant_id, property_id, payment_date, amount):
         self.tenant_id = tenant_id
         self.property_id= property_id
         self.payment_date= payment_date
         self.amount= amount
-
+        self.payment_id= payment_id
 
     def save(self):
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO rent_payments (tenant_id, property_id, payment_date, amount) VALUES(?, ?, ?, ? )", 
+            cursor.execute("INSERT INTO payments ( tenant_id, property_id, payment_date, amount) VALUES(?, ?, ?, ? )", 
                            (self.tenant_id, self.property_id, self.payment_date, self.amount))
             
 
@@ -433,18 +452,18 @@ class RentPayment:
 
 
 class MaintenanceRequest:
-    def __init__ (self, request_description, tenant_id, property_id, request_date, request_status="open",):
+    def __init__ (self, request_id, request_description, tenant_id, property_id, request_date, request_status="open",):
         self.request_description = request_description
         self.tenant_id= tenant_id
         self.property_id= property_id
         self.request_status= request_status
         self.request_date= request_date
-
+        self.request_id= request_id
 
     def save(self):
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO maintenance_requests (request_description, tenant_id, property_id, request_date, request_status) VALUES (?, ?, ?, ?)", 
-                           (self.request_description, self.tenant_id, self.property_id, self.request_date, self.request_status))
+            cursor.execute("INSERT INTO maintenance_requests ( request_description, tenant_id, property_id, request_date, request_status) VALUES (?, ?, ?, ?)", 
+                           ( self.request_description, self.tenant_id, self.property_id, self.request_date, self.request_status))
             
     
     @staticmethod
@@ -462,12 +481,12 @@ class MaintenanceRequest:
         
 
     #method for adding a new maintenance request
-    def add_maintenance_request(property_id, tenant_id, request_description, request_date, request_status):
+    def add_maintenance_request(request_id, property_id, tenant_id, request_description, request_date, request_status):
         request_date= datetime.now().strftime("%Y-%m-%d")
         request_status="Pending"
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO maintenance_request (property_id, tenant_id, request_date, request_description, request_status) VALUES (?, ?, ?, ?, ?)",
-                           (property_id, tenant_id, request_date, request_description, request_date, request_status))
+            cursor.execute("INSERT INTO maintenance_request (request_id, property_id, tenant_id, request_date, request_description, request_status) VALUES (?, ?, ?, ?, ?)",
+                           (request_id, property_id, tenant_id, request_date, request_description, request_date, request_status))
             print("Maintenance request added successfully!")
 
 
@@ -533,18 +552,19 @@ class MaintenanceRequest:
 
 
 class Expense:
-    def __init__ (self, description, amount, date, property_id):
+    def __init__ (self, expense_id, description, amount, date, property_id):
         self.description = description
         self.amount= amount
         self.date= date
         self.property_id= property_id
+        self.expense_id= expense_id
 
 
     def save(self):
         with get_cursor() as cursor:
             cursor.execute("""
-INSERT INTO expenses (description, amount, date, property_id) VALUES(?, ?, ?, ?)
-""", (self.description, self.amount, self.date, self.property_id))
+INSERT INTO expenses ( description, amount, date, property_id) VALUES(?, ?, ?, ?)
+""", ( self.description, self.amount, self.date, self.property_id))
             
     
     @staticmethod
@@ -599,28 +619,47 @@ INSERT INTO expenses (description, amount, date, property_id) VALUES(?, ?, ?, ?)
 
 
 class Document:
-    def __init__ (self, name, file_path, property_id, access_level):
+    def __init__ (self, document_id, name, file_path, property_id, access_level):
         self.name= name
         self.file_path= file_path
         self.property_id = property_id
         self.access_level= access_level
+        self.document_id = document_id
 
     
 
-    def save(self):
-        with get_cursor() as cursor:
-            cursor.execute("""
-INSERT INTO documents (name, file_path, property_id, access_level) VALUES (?, ?, ?, ?)
-""", (self.name, self.file_path, self.property_id, self.access_level))
+    #def save(self):
+      #  with get_cursor() as cursor:
+   #         cursor.execute("""
+#INSERT INTO documents (name, file_path, property_id, access_level) VALUES (?, ?, ?, ?)
+#""", (self.name, self.file_path, self.property_id, self.access_level))
             
+    def save(self):
+        connection = sqlite3.connect('property_management.db')
+        cursor = connection.cursor()
 
+        query = """
+        INSERT INTO documents (name, file_path, property_id, access_level) 
+        VALUES (?, ?, ?, ?)
+        """
+
+        cursor.execute(query, (self.name, self.file_path, self.property_id, self.access_level))
+        connection.commit()
+        connection.close()
     
-    @staticmethod
-    def get_all():
-        with get_cursor as cursor:
-            cursor.execute("SELECT * FROM documents ")
-            return cursor.fetchall()
-
+    @classmethod
+    def get_all(cls):
+        documents = []
+        with sqlite3.connect('property_management.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM documents")
+            rows = cursor.fetchall()
+            for row in rows:
+                document = cls(*row)  
+                documents.append(document)
+        #return documents
+        for document in documents:
+            print(document.document_id, document.name, document.file_path, document.property_id, document.access_level)
 
     
     @staticmethod

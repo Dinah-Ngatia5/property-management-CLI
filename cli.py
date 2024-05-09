@@ -17,11 +17,24 @@ def main():
 
 @main.command()
 def register():
-    pass 
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    # Create a new user record
+    User.create(username=username, password=password)
+    print("User registered successfully!")
+ 
 
 @main.command()
 def login():
-    pass
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    # Check if user exists and password matches
+    user = User.get_or_none(username=username)
+    if user and user.password == password:
+        print("Login successful!")
+    else:
+        print("Invalid username or password.")
+
 
 #adding commands to main group
 main.add_command(register)
@@ -38,13 +51,15 @@ def add():
     """Add a new property"""
     address= click.prompt("Enter property address", type=str)
     city= click.prompt("Enter city", type=str)
-    rent_amount= click.prompt("Enter rent_amount", type= float)
-    owner_id= click.prompt("Enter owner ID", type=int)
+    rent_amount= click.prompt("Enter rent_amount", type= int)
     status = click.prompt("Enter property status", type=str)
+    owner_id= click.prompt("Enter owner ID", type=int)
+   
 
     new_property= Property(address, city, rent_amount, status, owner_id)
-    new_property.save()
-    click.echo("Property added successfully.")
+    new_property.add()
+    click.echo(f"Property added successfully: Address: {new_property.address}, City: {new_property.city}, Rent Amount: {new_property.rent_amount}, Status: {new_property.status}, Owner ID: {new_property.owner_id}")
+    
 
 @property.command()
 @click.argument("property_id", type=int)
@@ -63,13 +78,14 @@ def view_property(property_id):
 @property.command()
 def list_properties():
     """List all properties""" 
-    properties= Property.get_all()
+    properties = Property.get_all()
     if properties:
         click.echo("Here's a full list of all properties:")
         for prop in properties:
-            click.echo(f"ID: {prop[0]}, \nAddress: {prop[1]}, \nCity: {prop[2]}, \nRent_amount{prop[3]}, \nStatus {prop[4]}, \nOwner ID {prop[5]} ")
-        else:
-            click.echo("No properties found.")
+            click.echo(f"Property ID: {prop.property_id}, Address: {prop.address}, City: {prop.city}, Rent Amount: {prop.rent_amount}, Status: {prop.status}, Owner ID: {prop.owner_id}")
+    else:
+        click.echo("No properties found.")
+
 
 
 @property.command()
@@ -327,13 +343,14 @@ def document():
 @document.command()
 def add():
     """Add a doc"""
-    name= click.prompt("Enter a new doc name", type=str)
+    name= click.prompt("Please enter a new doc name", type=str)
     file_path= click.prompt("Enter the file_path for this particular doc", type= str)
     property_id= click.prompt("Enter a property ID", type=int)
     access_level= click.prompt("Enter the access level for this particular doc", type=str)
 
 
     new_document = Document(name, file_path, property_id, access_level)
+
     new_document.save()
     click.echo("#New doc added!!")
 
@@ -353,14 +370,18 @@ def update(document_id):
 
 
 @document.command()
-@click.argument("document_id", type=int)
-def delete(document_id):
+def delete():
+    document_id = click.prompt("Enter the document ID to delete", type=int)
     """Delete a doc mehn!"""
     Document.delete(document_id)
     click.echo(f"Doc with ID{document_id} is out!!")
 
 
-
+@document.command()
+def list():
+    """List all docs"""
+    Document.get_all()
+    click.echo("Here a list of documents")
 
 
 
