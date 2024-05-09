@@ -1,4 +1,4 @@
-# 𝓟𝓡𝓞𝓟𝓔𝓡𝓣𝓨 𝓜𝓐𝓝𝓐𝓖𝓔𝓜𝓔𝓝𝓣 𝓢𝓨𝓢𝓣𝓔𝓜 𝓒𝓛𝓘
+# 𝙿𝚁𝙾𝙿𝙴𝚁𝚃𝚈 𝙼𝙰𝙽𝙰𝙶𝙴𝙼𝙴𝙽𝚃 𝚂𝚈𝚂𝚃𝙴𝙼 𝙲𝙻𝙸
 
 The Property Management System Command Line Interface(CLI) is a CLI application which empowers property managers and landlords to efficiently manage their real estate assets with ease. From tracking expenses to managing tenants, this CLI has got you covered.
 
