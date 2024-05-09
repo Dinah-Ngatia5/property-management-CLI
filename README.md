@@ -22,6 +22,11 @@
 
 Built with Python and SQLite, this property management system CLI streamlines the process of managing properties, tenants and maintenance tasks, providing a centralized platform for users to efficiently handle all aspects "property management".
 
+
+
+
+_This project's main purpose has been to serve as a learning exercise for me_
+
 ## |Features:|
 
 - **Property Management**: Add, update and view properties with ease. Manage addresses, prices and owners. Never miss a detail when it comes to your real estate assets.
