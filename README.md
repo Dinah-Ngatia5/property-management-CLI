@@ -1,6 +1,6 @@
 # 𝙿𝚁𝙾𝙿𝙴𝚁𝚃𝚈 𝙼𝙰𝙽𝙰𝙶𝙴𝙼𝙴𝙽𝚃 𝚂𝚈𝚂𝚃𝙴𝙼 𝙲𝙻𝙸
 
-The Property Management System Command Line Interface(CLI) is a CLI application which empowers property managers and landlords to efficiently manage their real estate assets with ease. From tracking expenses to managing tenants, this CLI has got you covered.
+> The Property Management System Command Line Interface(CLI) is a CLI application which empowers property managers and landlords to efficiently manage their real estate assets with ease. From tracking expenses to managing tenants, this CLI has got you covered.
 
 
 ## Contents
@@ -32,7 +32,7 @@ Built with Python and SQLite, this property management system CLI streamlines th
 - **Expense Tracking**: Record and manage expenses like repairs, utilities and more. Tenants can submit maintenance requests directly through the CLI, allowing you to address issues promptly.
 - **Document Management**: Store important documents like leases and contracts. Your paperwork stays organized and secure.
 - **User Authentication**: Secure access to your rental assets with user authentication and permission.
-- **CLI Interface**: No GUI needed. 
+- **CLI Interface**: No GUI needed
 
 ## Getting Started
 
