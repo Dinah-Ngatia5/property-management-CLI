@@ -18,11 +18,11 @@
 - [Additional credits](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#additional-credits)
   
 
-## Overview
+## Introduction
 
 Built with Python and SQLite, this property management system CLI streamlines the process of managing properties, tenants and maintenance tasks, providing a centralized platform for users to efficiently handle all aspects "property management".
 
-## Key Features
+## |Features:|
 
 - **Property Management**: Add, update and view properties with ease. Manage addresses, prices and owners. Never miss a detail when it comes to your real estate assets.
 - **Owner Management**: Keep track of property owners. You can store important information like names, emails, and phone numbers to stay connected with everyone involved in your properties.
