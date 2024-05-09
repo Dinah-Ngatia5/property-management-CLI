@@ -25,7 +25,7 @@ Built with Python and SQLite, this property management system CLI streamlines th
 
 
 
-_This project's main purpose has been to serve as a learning exercise for me_
+_This project's main purpose has been to serve as a learning exercise for me, i'd advice you to lower your expectations a little bit 😅_
 
 ## |Features:|
 
