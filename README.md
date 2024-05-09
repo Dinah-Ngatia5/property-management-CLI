@@ -5,8 +5,8 @@
 
 ## Contents
 
-- [Overview](https://github.com/Dinah-Ngatia5property-management-CLItab=readme-ov-file#overview)
-- [Key Features](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#key-features)
+- [Introduction](https://github.com/Dinah-Ngatia5property-management-CLItab=readme-ov-file#overview)
+- [|Features:|](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#key-features)
 - [Getting Started](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#getting-started)
   - [Prerequisities](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#prerequisities)
   - [Installation](https://github.comDinah-Ngatia5/property-management-CLItab=readme-ov-file#installation)
