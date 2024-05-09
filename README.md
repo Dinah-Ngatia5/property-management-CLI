@@ -20,7 +20,7 @@ The Property Management System Command Line Interface(CLI) is a CLI application 
 
 ## Overview
 
-Built with Python and SQLite, this system is packed with features that'll make you feel like a 
+Built with Python and SQLite, this property management system CLI streamlines the process of managing properties, tenants and maintenance tasks, providing a centralized platform for users to efficiently handle all aspects "property management".
 
 ## Key Features
 
