@@ -2,6 +2,7 @@ import sqlite3
 import re
 from datetime import datetime
 from contextlib import contextmanager
+import datetime
 
 conn = sqlite3.connect("property_management.db")
 cursor = conn.cursor()
@@ -126,12 +127,27 @@ class User:
         self.password= password
         self.user_id= user_id
 
-    def save(self):
+    @classmethod
+    def create(cls, username, password):
+        query = """
+            INSERT INTO users (username, password)
+            VALUES (?, ?)
+        """
         with get_cursor() as cursor:
-            cursor.execute("""
-            INSERT INTO users ( username, password)
-            VALUES(?, ?)
-""", ( self.username, self.password,))
+            cursor.execute(query, (username, password))
+
+     
+     
+    @classmethod
+    def get_or_none(cls, username):
+        query = "SELECT * FROM users WHERE username = ?"
+        with get_cursor() as cursor:
+            cursor.execute(query, (username,))
+            user_data = cursor.fetchone()
+            if user_data:
+                return User(*user_data)
+            else:
+                return None
             
 
 
@@ -339,58 +355,77 @@ class Tenant:
         self.property_id= property_id
         self.tenant_id= tenant_id
     
-    def save(self):
-        with get_cursor() as cursor:
-            cursor.execute("INSERT INTO tenants ( name, contact_info, lease_start_date, lease_end_date, property_id VALUES (?, ?, ?, ?, ?)",
-                           ( self.name, self.contact_info, self.lease_start_date, self.lease_end_date, self.property_id))
-            
     
+    @staticmethod
+    def validate_contact_info(contact_info):
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        phone_pattern = r'^\d{10}$'  # Assuming a 10-digit phone number format
+        if re.match(email_pattern, contact_info) or re.match(phone_pattern, contact_info):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def validate_dates(lease_start_date, lease_end_date):
+        try:
+            start_date = datetime.strptime(lease_start_date, '%Y-%m-%d')
+            end_date = datetime.strptime(lease_end_date, '%Y-%m-%d')
+            
+            # check if the start date is before the end date
+            if start_date < end_date:
+                return True
+            else:
+                return False
+        except ValueError:
+            #if there's an error parsing the date strings, return False
+            return False
+
+    def add(self):
+      if not self.validate_contact_info(self.contact_info):
+          raise ValueError("Invalid contact information")
+      if not self.validate_dates(self.lease_start_date, self.lease_end_date):
+          raise ValueError("Invalid lease dates")
+      query = """
+          INSERT INTO tenants ( name, contact_info, lease_start_date, lease_end_date, property_id)
+          VALUES ( ?, ?, ?, ?, ?)
+      """
+      with get_cursor() as cursor:
+          cursor.execute(query, (self.tenant_id, self.name, self.contact_info, self.lease_start_date,
+                                 self.lease_end_date, self.property_id))
+    @staticmethod
+    def get_by_id(tenant_id):
+        query = "SELECT * FROM tenants WHERE tenant_id = ?"
+        with get_cursor() as cursor:
+            cursor.execute(query, (tenant_id,))
+            return cursor.fetchone()
 
     @staticmethod
     def get_all():
+        query = "SELECT * FROM tenants"
         with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM tenants")
+            cursor.execute(query)
             return cursor.fetchall()
-    
+
+    def update(self):
+        if not self.validate_contact_info(self.contact_info):
+            raise ValueError("Invalid contact information")
+
+        if not self.validate_dates(self.lease_start_date, self.lease_end_date):
+            raise ValueError("Invalid lease dates")
+        query = """
+            UPDATE tenants
+            SET name = ?, contact_info = ?, lease_start_date = ?, lease_end_date = ?, property_id = ?
+            WHERE tenant_id = ?
+        """
+        with get_cursor() as cursor:
+            cursor.execute(query, (self.name, self.contact_info, self.lease_start_date,
+                                   self.lease_end_date, self.property_id, self.tenant_id))
 
     @staticmethod
-    def get_by_id(tenant_id):
+    def delete(tenant_id):
+        query = "DELETE FROM tenants WHERE tenant_id = ?"
         with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM tenants WHERE id=?", (tenant_id,))
-            return cursor.fetchone()
-
-
-
-    #Section for adding methods like delete, update etc
-    def delete(self, tenant_id):
-        with get_cursor() as cursor:
-            cursor.execute("DELETE FROM tenants WHERE id = ?", (tenant_id))
-
-    
-    def update(self, tenant_id, new_name=None, new_contact_info = None, new_lease_start_date=None, new_lease_end_date=None, new_property_id= None ):
-        with get_cursor() as cursor:
-            update_fields = []
-            update_values = []
-            if new_name:
-                update_fields.append("name = ?")
-                update_values.append(new_name)
-            if new_contact_info:
-                update_fields.append("contact_info = ?")
-                update_values.append(new_contact_info)
-            if new_lease_start_date:
-                update_fields.append("lease_start_date = ?")
-                update_values.append(new_lease_start_date)
-            if new_lease_end_date:
-                update_fields.append("lease_end_date = ?")
-                update_values.append(new_lease_end_date)
-            if new_property_id:
-                update_fields.append("property_id = ?")
-                update_values.append(new_property_id)
-
-
-            update_query= "UPDATE tenants SET " + ", " .join(update_fields) + "WHERE id = ?"
-            update_values.append(tenant_id)
-            cursor.execute(update_query, update_values)
+            cursor.execute(query, (tenant_id,))
 
 
 
@@ -404,36 +439,73 @@ class RentPayment:
         self.amount= amount
         self.payment_id= payment_id
 
-    def save(self):
+    @staticmethod
+    def validate_amount(amount):
+        #amount is a positive n.o or not
+        return isinstance(amount, (int, float)) and amount > 0
+
+    @staticmethod
+    def validate_payment_date(payment_date):
+        date_format = '%Y-%m-%d'
+        try:
+            datetime.strptime(payment_date, date_format)
+            return True
+        except ValueError:
+            return False
+        
+    def add(self):
+        if not self.validate_amount(self.amount):
+            raise ValueError("Invalid amount")
+        if not self.validate_payment_date(self.payment_date):
+            raise ValueError("Invalid payment date")
+        query = """
+            INSERT INTO rent_payments ( payment_id, tenant_id, property_id, payment_date, amount)
+            VALUES ( ?, ?, ?, ?)
+        """
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO payments ( tenant_id, property_id, payment_date, amount) VALUES(?, ?, ?, ? )", 
-                           (self.tenant_id, self.property_id, self.payment_date, self.amount))
+            cursor.execute(query, (self.payment_id, self.tenant_id, self.property_id,
+                                   self.payment_date, self.amount))
             
 
 
-    @staticmethod
-    def get_all():
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM rent_payments")
-            return cursor.fetchall()
-        
+    def update(self):
+       if not self.validate_amount(self.amount):
+           raise ValueError("Invalid amount")
+       if not self.validate_payment_date(self.payment_date):
+           raise ValueError("Invalid payment date")
+       query = """
+           UPDATE rent_payments
+           SET tenant_id = ?, property_id = ?, payment_date = ?, amount = ?
+           WHERE payment_id = ?
+       """
+       with get_cursor() as cursor:
+           cursor.execute(query, (self.tenant_id, self.property_id, self.payment_date,
+                                  self.amount, self.payment_id))
+           
+
 
     @staticmethod
     def get_by_id(payment_id):
+        query = "SELECT * FROM rent_payments WHERE payment_id = ?"
         with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM rent_payment WHERE id= ?", (payment_id,))
+            cursor.execute(query, (payment_id,))
             return cursor.fetchone()
 
-
-    #method: adding a new rent payment
-    def add_rent_payment(property_id, tenant_id, payment_amount):
-        payment_date =  datetime.now().strftime('%Y-%m-%d')
+    @staticmethod
+    def get_all():
+        query = "SELECT * FROM rent_payments"
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO rent_payments(property_id, tenant_id, payment_amount, payment_date) VALUES(?, ?, ?, ?)",
-                           (property_id, tenant_id, payment_amount, payment_date))
+            cursor.execute(query)
+            return cursor.fetchall()
+        
+   # def add_rent_payment(property_id, tenant_id, payment_amount):
+        #payment_date =  datetime.now().strftime('%Y-%m-%d')
+        #with get_cursor() as cursor:
+        #    cursor.execute("INSERT INTO rent_payments(property_id, tenant_id, payment_amount, payment_date) VALUES(?, ?, ?, ?)",
+         #                  (property_id, tenant_id, payment_amount, payment_date))
 
 
-    #method: retrieving rent payments for a specific property
+    
     def get_rent_payments_for_property(property_id):
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM rent_payments WHERE property_id = ?", (property_id,))
@@ -441,7 +513,6 @@ class RentPayment:
             for payment in payments:
                 print(payment)
 
-    #method: retrieving rent payments for a specific tenant
     def get_rent_payments_for_tenant(tenant_id):
         with get_cursor() as cursor:
             cursor.execute("SELECT * FROM rent_payments WHERE tenant_id= ?", (tenant_id,))
@@ -450,42 +521,12 @@ class RentPayment:
                 print(payment)
 
 
-    #method: deleting a particular rent payment arg (payment_id)
-    def delete_rent_payment(payment_id):
+
+    @staticmethod
+    def delete(payment_id):
+        query = "DELETE FROM rent_payments WHERE payment_id = ?"
         with get_cursor() as cursor:
-            cursor.execute('DELETE FROM rent_payments WHERE id=?', (payment_id,))
-            conn.commit()
-            print("Rent payment deleted successfully")
-
-    
-
-    def delete(self, payment_id):
-        with get_cursor() as cursor:
-            cursor.execute("DELETE FROM rent_payments WHERE id = ?", (payment_id,))
-
-    
-    def update(self, payment_id, new_tenant_id= None, new_property_id= None, new_payment_date= None, new_amount= None):
-        with get_cursor() as cursor:
-            update_fields = []
-            update_values = []
-            if new_tenant_id:
-                update_fields.append("tenant_id = ?")
-                update_values.append(new_tenant_id)
-            if new_property_id:
-                update_fields.append("property_id = ?")
-                update_values.append(new_property_id)
-            if new_payment_date:
-                update_fields.append("payment_date = ?")
-                update_values.append(new_payment_date)
-            if new_amount:
-                update_fields.append("amount = ?")
-                update_values.append(new_amount)
-
-            update_query = "UPDATE rent_payments SET " + ", ".join(update_fields) + "WHERE id = ?"
-            update_values.append(payment_id)
-            cursor.execute(update_query, update_values)
-            
-
+            cursor.execute(query, (payment_id,))
 
 
 
@@ -498,93 +539,54 @@ class MaintenanceRequest:
         self.request_date= request_date
         self.request_id= request_id
 
-    def save(self):
+    def validate_request_status(request_status):
+        allowed_statuses = ["open", "in progress", "completed"]
+        return request_status.lower() in allowed_statuses
+
+
+    def add(self):
+        if not self.validate_request_status(self.request_status):
+            raise ValueError("Invalid request status")
+        query = """
+            INSERT INTO maintenance_requests (request_id, request_description, tenant_id, property_id, request_date, request_status)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO maintenance_requests ( request_description, tenant_id, property_id, request_date, request_status) VALUES (?, ?, ?, ?)", 
-                           ( self.request_description, self.tenant_id, self.property_id, self.request_date, self.request_status))
+            cursor.execute(query, (self.request_id, self.request_description, self.tenant_id,
+                                   self.property_id, self.request_date, self.request_status))
+
             
-    
-    @staticmethod
-    def get_all():
+    def update(self):
+        if not self.validate_request_status(self.request_status):
+            raise ValueError("Invalid request status")
+        query = """
+            UPDATE maintenance_requests
+            SET request_description = ?, tenant_id = ?, property_id = ?, request_date = ?, request_status = ?
+            WHERE request_id = ?
+        """
         with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM maintenance_requests")
-            return cursor.fetchall()
-        
+            cursor.execute(query, (self.request_description, self.tenant_id, self.property_id,
+                                   self.request_date, self.request_status, self.request_id))
+
+    @staticmethod
+    def delete(request_id):
+        query = "DELETE FROM maintenance_requests WHERE request_id = ?"
+        with get_cursor() as cursor:
+            cursor.execute(query, (request_id,))
 
     @staticmethod
     def get_by_id(request_id):
+        query = "SELECT * FROM maintenance_requests WHERE request_id = ?"
         with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM maintenance_requests WHERE id= ?", (request_id,))
+            cursor.execute(query, (request_id,))
             return cursor.fetchone()
-        
 
-    #method for adding a new maintenance request
-    def add_maintenance_request(request_id, property_id, tenant_id, request_description, request_date, request_status):
-        request_date= datetime.now().strftime("%Y-%m-%d")
-        request_status="Pending"
+    @staticmethod
+    def get_all():
+        query = "SELECT * FROM maintenance_requests"
         with get_cursor() as cursor:
-            cursor.execute("INSERT INTO maintenance_request (request_id, property_id, tenant_id, request_date, request_description, request_status) VALUES (?, ?, ?, ?, ?)",
-                           (request_id, property_id, tenant_id, request_date, request_description, request_date, request_status))
-            print("Maintenance request added successfully!")
-
-
-    #method for retrieving maintenance requests (specific property)
-    def get_maintenance_requests_for_property(property_id):
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM maintenance_requests WHERE property_id = ?", (property_id,))
-            requests= cursor.fetchall()
-            for  request in requests:
-                print(request)
-
-
-    #method for retrieving maintenance requests(specific tenant)
-    def get_maintenance_requests_for_tenant(tenant_id):
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM maintenance_requests WHERE tenant_id= ?", (tenant_id,))
-            requests= cursor.fetchall()
-            for request in requests:
-                print(request)
-
-    
-    #method for updating the status of a maintenance request
-    def update_maintenance_request_status(request_id, new_status):
-        cursor.execute("UPDATE maintenance_requests SET request_status= ? WHERE id=?", (new_status, request_id))
-        print("Maintenance request status updated successfully")
-    
-
-
-    #method for deleting a  maintenance request
-    def delete_maintenance_request(request_id):
-        with get_cursor() as cursor:
-            cursor.execute("DELETE FROM maintenance_requests WHERE id = ?", (request_id,))
-            print("Maintenance request status deleted successfully!")
-
-
-    def delete(self, request_id):
-        with get_cursor() as cursor:
-            cursor.execute("DELETE FROM maintenance_requests WHERE id = ?", {request_id, })
-
-
-    def update(self, request_id, new_description=None, new_tenant_id=None, new_property_id=None, new_request_status=None ):
-        with get_cursor() as cursor:
-            update_fields = []
-            update_values = []
-            if new_description:
-                update_fields.append("description = ?")
-                update_values.append(new_description)
-            if new_tenant_id:
-                update_fields.append("tenant_id = ?")
-                update_values.append(new_tenant_id)
-            if new_property_id:
-                update_fields.append("property_id = ?")
-                update_values.append(new_property_id)
-            if new_request_status:
-                update_fields.append("request_status = ?")
-                update_fields.append(new_request_status)
-            
-            update_query = "UPDATE maintenance_requests SET " + ", ".join(update_fields) + "WHERE id = ?"
-            update_values.append(request_id)
-            cursor.execute(update_query, update_values)
+            cursor.execute(query)
+            return cursor.fetchall()
 
 
 
@@ -597,63 +599,66 @@ class Expense:
         self.property_id= property_id
         self.expense_id= expense_id
 
+    @staticmethod
+    def validate_amount(amount):
+        if not isinstance(amount, (int, float)) or amount <= 0:
+            return False
+        return True
 
-    def save(self):
-        with get_cursor() as cursor:
-            cursor.execute("""
-INSERT INTO expenses ( description, amount, date, property_id) VALUES(?, ?, ?, ?)
-""", ( self.description, self.amount, self.date, self.property_id))
-            
     
     @staticmethod
-    def get_all():
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM expenses")
-            return cursor.fetchall()
-        
-    @staticmethod
-    def get_expenses_for_property(property_id):
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM expenses WHERE property_id = ?", (property_id,))
-            expenses = cursor.fetchall()
+    def validate_date(date):
+        try:
+            datetime.datetime.strptime(date, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
 
-            return expenses
+    def add(self):
+        if not self.validate_amount(self.amount):
+            raise ValueError("Invalid amount")
+
+        if not self.validate_date(self.date):
+            raise ValueError("Invalid date format")
+        query = """
+            INSERT INTO expenses (expense_id, description, amount, date, property_id)
+            VALUES (?, ?, ?, ?, ?)
+        """
+        with get_cursor() as cursor:
+            cursor.execute(query, (self.expense_id, self.description, self.amount, self.date, self.property_id))
 
     @staticmethod
     def get_by_id(expense_id):
+        query = "SELECT * FROM expenses WHERE expense_id = ?"
         with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
+            cursor.execute(query, (expense_id,))
             return cursor.fetchone()
 
-
-    def delete(self, expense_id):
+    @staticmethod
+    def get_all():
+        query = "SELECT * FROM expenses"
         with get_cursor() as cursor:
-            cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))  
+            cursor.execute(query)
+            return cursor.fetchall()
 
-
-    def update(self, expense_id, new_description=None, new_amount=None, new_date=None, new_property_id= None ):
+    def update(self):
+        query = """
+            UPDATE expenses
+            SET description = ?, amount = ?, date = ?, property_id = ?
+            WHERE expense_id = ?
+        """
         with get_cursor() as cursor:
-            update_fields= []
-            update_values= []
-            if new_description:
-                update_fields.append("description = ?")
-                update_values.append("amount = ?") 
-            if new_amount:
-                update_fields.append("amount = ?")
-                update_values.append(new_amount)
-            if new_date:
-                update_fields.append("date = ?")
-                update_values.append(new_date)
-            if new_property_id:
-                update_fields.append("property_id = ?")
-                update_values.append(new_property_id)
+            cursor.execute(query, (self.description, self.amount, self.date, self.property_id, self.expense_id))
 
-            update_query = "UPDATE expenses SET " + ", ".join(update_fields) + "WHERE id = ?"
-            update_values.append(expense_id)
-            cursor.execute(update_query, update_values)
+    @staticmethod
+    def delete(expense_id):
+        query = "DELETE FROM expenses WHERE expense_id = ?"
+        with get_cursor() as cursor:
+            cursor.execute(query, (expense_id,))
 
 
-    # add methods as needed (delete, update)
+
+
 
 
 class Document:
@@ -706,8 +711,6 @@ class Document:
             cursor.execute("SELECT * FROM documents WHERE id= ?", (document_id,))
             return cursor.fetchone()
         
-
-    #add other methods(delete, update)
 
     def delete(self, document_id):
         with get_cursor() as cursor:
