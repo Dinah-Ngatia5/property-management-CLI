@@ -121,8 +121,8 @@ Special thanks to the following resources and libraries:
 - Python - The programming language that powers this app
 - SQlite - The lightweight, file-based management sytem for storing all the property data.
 - sqlite3 - The Python module that helped work with SQLite database like magic! 
-- contextlib - The Python moduel for regular expressions operations, helped validate user input.
-- Also sincerest gratitude to open-source community, you rock!🤘
+- contextlib - The Python module for regular expressions operations, helped validate user input.
+- Also sincerest gratitude to the open-source community, you rock!🤘
   
 
 ## Contact

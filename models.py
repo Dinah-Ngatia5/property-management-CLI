@@ -170,10 +170,6 @@ class Property:
                 properties.append(property)
             return properties
     
-    def get_by_id(property_id):
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM properties WHERE id= ?", (property_id,))
-            return cursor.fetchone()
 
 
     def add_property():
@@ -207,69 +203,96 @@ class Property:
             cursor.execute("DELETE FROM properties WHERE id = ?", (property_id, ))
 
 
-    def update(self, property_id, new_address=None, new_city= None, new_rent_amount=None, new_owner_id=None, new_status=None):
+    @classmethod
+    def get_by_id(cls, property_id):
         with get_cursor() as cursor:
-            update_fields = []
-            update_values= []
-            if new_address:
-                update_fields.append("address = ?")
-                update_values.append(new_address)
-            if new_city:
-                update_fields.append("city = ?")
-                update_values.append(new_city)
-            if new_rent_amount:
-                update_fields.append("rent_amount = ?")
-                update_values.append(new_rent_amount)
-            if new_status:
-                update_fields.append("status = ?")
-                update_values.append(new_status)
-            if new_owner_id:
-                update_fields.append("owner_id = ?")
-                update_values.append(new_owner_id)
+            cursor.execute("SELECT * FROM properties WHERE property_id = ?", (property_id,))
+            property_data = cursor.fetchone()
+            if property_data:
+                # Unpack the property data
+                property_id, address, city, rent_amount, status, owner_id = property_data
+                print(f"Property ID: {property_id}, Address: {address}, City: {city}, Rent Amount: {rent_amount}, Status: {status}, Owner ID: {owner_id}")
+                return cls(property_id, address, city, rent_amount, status, owner_id)
+            else:
+                return None
 
-            
-            update_query= "UPDATE properties SET " + ", ".join(update_fields) + "WHERE id = ?"
-            update_values.append(property_id)
-            cursor.execute(update_query, update_values)
 
-        
+    def update(cls, property_id, new_address=None, new_city=None, new_rent_amount=None, new_owner_id=None, new_status=None):
+        property_to_update = cls.get_by_id(property_id)
+        if property_to_update:
+            with get_cursor() as cursor:
+                update_fields = []
+                update_values = []
 
+                if new_address:
+                    update_fields.append("address = ?")
+                    update_values.append(new_address)
+                if new_city:
+                    update_fields.append("city = ?")
+                    update_values.append(new_city)
+                if new_rent_amount:
+                    update_fields.append("rent_amount = ?")
+                    update_values.append(new_rent_amount)
+                if new_status:
+                    update_fields.append("status = ?")
+                    update_values.append(new_status)
+                if new_owner_id:
+                    update_fields.append("owner_id = ?")
+                    update_values.append(new_owner_id)
+
+                update_values.append(property_id)
+
+                update_query = f"UPDATE properties SET {', '.join(update_fields)} WHERE property_id = ?"
+                cursor.execute(update_query, update_values)
+        else:
+            raise ValueError(f"Property with ID {property_id} not found.")
 
  
 
 class Owner:
-    def __init__(self, owner_id, name, email, phone):
+    def __init__(self, name, email, phone, owner_id):
         self.name = name
         self.email = email
         self.phone = phone
         self.owner_id= owner_id
 
-    def save(self):
-        with get_cursor() as cursor:
-            cursor.execute("INSERT INTO owners ( name, email, phone) VALUES(?, ?, ?)",
-                            ( self.name, self.email, self.phone))
-       
-       
-       
-    @staticmethod
-    def get_all():
-        with get_cursor as cursor:
-            cursor.execute("SELECT * FROM owners")
-            return cursor.fetchall()
+    @classmethod
+    def add(self, name, email, phone):
+        if not self.validate_email(email):
+            raise ValueError("Invalid email format")
+        if not self.validate_phone(phone):
+            raise ValueError("Invalid phone number format")
         
+        with get_cursor() as cursor:
+            cursor.execute("INSERT INTO owners (name, email, phone) VALUES (?, ?, ?)", (name, email, phone))
+
+    @classmethod
+    def delete( self, owner_id):
+        with get_cursor() as cursor:
+            cursor.execute("DELETE FROM owners WHERE owner_id = ?", (owner_id,))
+
+    @classmethod
+    def get_by_id(cls, owner_id):
+        """Get an owner by their ID."""
+        with get_cursor() as cursor:
+            query = "SELECT * FROM owners WHERE owner_id = ?"
+            cursor.execute(query, (owner_id,))
+            row = cursor.fetchone()
+            if row:
+                owner = cls(*row) 
+                return owner
+            else:
+                return None
+        
+    @staticmethod
+    def validate_email(email):
+        email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        return re.match(email_pattern, email) is not None
 
     @staticmethod
-    def get_by_id(owner_id):
-        with get_cursor() as cursor:
-            cursor.execute("SELECT * FROM owner WHERE id = ?", (owner_id,))
-            return cursor.fetchone()
-        
-
-
-
-    def delete(self, owner_id):
-        with get_cursor() as cursor:
-            cursor.execute("DELETE FROM owners WHERE id = ?", (owner_id))
+    def validate_phone(phone):
+        phone_pattern = r"^\d[-\d\s]*\d$"
+        return re.match(phone_pattern, phone) is not None
 
     
     def update(self, owner_id, new_name=None, new_email=None, new_phone=None):
@@ -290,6 +313,21 @@ class Owner:
             update_query = "UPDATE owners SET " + ", ".join(update_fields) + "WHERE id = ?"
             update_values.append(owner_id)
             cursor.execute(update_query, update_values)
+
+
+    @classmethod
+    def get_all(cls):
+        """Get all owners."""
+        with get_cursor() as cursor:
+            query = "SELECT * FROM owners"
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            owners = []
+            for row in rows:
+                owner = cls(*row) 
+                owners.append(owner)
+            return owners
+            
 
 
 class Tenant:

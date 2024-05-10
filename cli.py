@@ -86,20 +86,29 @@ def list_properties():
     else:
         click.echo("No properties found.")
 
-
+@property.command()
+def find_by_id():
+    """Find a property by its ID."""
+    property_id = click.prompt("Enter the property ID", type=int)
+    property_data = Property.get_by_id(property_id)
+    if property_data:
+        click.echo("Property found:")
+        click.echo(property_data)
+    else:
+        click.echo("Property not found.")
 
 @property.command()
-@click.argument("property_id", type=int)
+@click.argument('property_id', type=int)
 def update(property_id):
     """Update a property"""
-    new_address= click.prompt("Enter new address (leave blank to keep current)", default="")
-    new_city= click.prompt("Enter new city(leave blank to keep current)", default="")
-    new_rent_amount= click.prompt("Enter new price(leave blank to keep current)", default=0.0)
-    new_owner_id=click.prompt("Enter new owner ID (leave blank to keep current)", default=0)
-    new_status= click.prompt("Enter new property status (leave blank to keep current)", default="")
+    new_address = click.prompt("Enter new address (leave blank to keep current)", default="", type=str)
+    new_city = click.prompt("Enter new city (leave blank to keep current)", default="", type=str)
+    new_rent_amount = click.prompt("Enter new price (leave blank to keep current)", default=0.0, type=float)
+    new_owner_id = click.prompt("Enter new owner ID (leave blank to keep current)", default=0, type=int)
+    new_status = click.prompt("Enter new property status (leave blank to keep current)", default="", type=str)
 
     Property.update(property_id, new_address, new_city, new_rent_amount, new_owner_id, new_status)
-    click.echo("Property update successfully")
+    click.echo("Property updated successfully.")
 
 
 #Owner operations
@@ -111,12 +120,13 @@ def owner():
 @owner.command()
 def add():
     """Add a new owner"""
-    name=click.prompt("Enter owner name", type=str)
-    email=click.prompt("Enter email", type=str)
-    phone=click.prompt("Enter phone number", type=str)
+    name = click.prompt("Enter owner name", type=str)
+    email = click.prompt("Enter email", type=str)
+    phone = click.prompt("Enter phone number", type=str)
 
-    new_owner= Owner(name, email, phone)
-    new_owner.save()
+    new_owner = Owner(owner_id=None, name=name, email=email, phone=phone)
+    new_owner.add(name, email, phone)
+
     click.echo("Owner added successfully.")
 
 
@@ -133,23 +143,38 @@ def update(owner_id):
 
 
 @owner.command()
-@click.argument("owner_id", type=int)
+@click.option("--owner-id", prompt="Enter the owner ID to delete", type=int, help="The ID of the owner to delete")
 def delete(owner_id):
-    """Delete an owner"""
-    Owner.delete(owner_id)
-    click.echo("Owner deleted successfully")
+    """Delete an owner by ID."""
+    try:
+        # Call the delete method of the Owner class here passing the owner_id
+        Owner.delete(owner_id)
+        click.echo(f"Owner with ID {owner_id} deleted successfully.")
+    except Exception as e:
+        click.echo(f"An error occurred: {str(e)}")
 
 
 @owner.command()
-def list():
-    """List of all owners"""
-    owners= Owner.get_all()
+def list_owners():
+    """List all owners."""
+    owners = Owner.get_all()
     if owners:
-        click.echo("Here's a list of  Property-owners: ")
+        click.echo("Here's a list of all owners:")
         for owner in owners:
-            click.echo(f"ID: {owner[0]}, \nName: {owner[1]}, \nEmail: {owner[2]}, \nPhone n.o: {owner[3]}")
-        else:
-            click.echo("No owners found.")
+            click.echo(f"Owner ID: {owner.owner_id}, Name: {owner.name}, Email: {owner.email}, Phone: {owner.phone}")
+    else:
+        click.echo("No owners found.")
+
+@owner.command()
+def find_by_id():
+    """Find an owner by their ID."""
+    owner_id = click.prompt("Enter the owner ID", type=int)
+    owner = Owner.get_by_id(owner_id)
+    if owner:
+        click.echo("Owner found:")
+        click.echo(f"Owner ID: {owner.owner_id}, Name: {owner.name}, Email: {owner.email}, Phone: {owner.phone}")
+    else:
+        click.echo("Owner not found.")
 
 
 
